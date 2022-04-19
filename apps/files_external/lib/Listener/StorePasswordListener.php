@@ -51,17 +51,25 @@ class StorePasswordListener implements IEventListener {
 		}
 
 		$stored = $this->credentialsManager->retrieve($event->getUser()->getUID(), LoginCredentials::CREDENTIALS_IDENTIFIER);
-		$update = isset($stored['password']) && $stored['password'] !== $event->getPassword();
-		if (!$update && $event instanceof UserLoggedInEvent) {
-			$update = isset($stored['user']) && $stored['user'] !== $event->getLoginName();
+
+		$credentials = [];
+		$update = false;
+
+		if (isset($stored['password']) && $stored['password'] !== $event->getPassword()) {
+			$update = true;
+			$credentials['password'] = $event->getPassword();
+		}
+
+		if (isset($stored['user'])) {
+			$credentials['user'] = $stored['user'];
+
+			if ($event instanceof UserLoggedInEvent && $stored['user'] !== $event->getLoginName()) {
+				$update = true;
+				$credentials['user'] = $event->getLoginName();
+			}
 		}
 
 		if ($stored && $update) {
-			$credentials = [
-				'user' => $event->getLoginName(),
-				'password' => $event->getPassword()
-			];
-
 			$this->credentialsManager->store($event->getUser()->getUID(), LoginCredentials::CREDENTIALS_IDENTIFIER, $credentials);
 		}
 	}
