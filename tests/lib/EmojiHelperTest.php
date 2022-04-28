@@ -85,7 +85,8 @@ class EmojiHelperTest extends TestCase {
 			['0', false],
 			['$', false],
 			['$$', false],
-			// E
+			// Extracted from spreed/node_modules/emojis-list/index.js
+			// https://github.com/Kikobeats/emojis-list/blob/master/index.js
 			["🀄️", true],
 			["🃏", true],
 			["🅰️", true],
