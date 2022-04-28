@@ -1,6 +1,6 @@
 <template>
-	<div class="theming__preview">
-		<div class="theming__preview-image" :style="{ backgroundImage: 'url(' + img + ')' }" />
+	<div :class="'theming__preview--' + theme.id" class="theming__preview">
+		<div class="theming__preview-image" :style="{ backgroundImage: 'url(' + img + ')' }" @click="checked = true" />
 		<div class="theming__preview-description">
 			<h3>{{ theme.title }}</h3>
 			<p>{{ theme.description }}</p>
@@ -75,11 +75,10 @@ export default {
 }
 </script>
 <style lang="scss" scoped>
-// We make previews on 16/10 screens
-$ratio: 16;
-
 .theming__preview {
+	// We make previews on 16/10 screens
 	--ratio: 16;
+
 	position: relative;
 	display: flex;
 	justify-content: flex-start;
@@ -95,6 +94,7 @@ $ratio: 16;
 		flex-shrink: 0;
 		height: calc(10px * var(--ratio));
 		margin-right: var(--gap);
+		cursor: pointer;
 		border-radius: var(--border-radius);
 		background-repeat: no-repeat;
 		background-position: top left;
@@ -109,6 +109,10 @@ $ratio: 16;
 			padding: 12px 0;
 		}
 	}
+
+	&--default {
+		grid-column: span 2;
+	}
 }
 
 @media (max-width: (1024px / 1.5)) {
@@ -120,5 +124,4 @@ $ratio: 16;
 		}
 	}
 }
-
 </style>
