@@ -60,24 +60,13 @@ class EmojiHelper implements IEmojiHelper {
 		foreach ($codePointIterator->getPartsIterator() as $codePoint) {
 			$codePointType = \IntlChar::charType($codePoint);
 
-			// Unicode chars need 2 or more chars
-			// This condition is to don't continue if non emoji chars
-			if (strlen($emoji) >= 2) {
-				// If the current code-point is an emoji or a modifier (like a skin-tone)
-				// just continue and check the next character
-				if ($codePointType === \IntlChar::CHAR_CATEGORY_MODIFIER_SYMBOL ||
-					$codePointType === \IntlChar::CHAR_CATEGORY_MODIFIER_LETTER ||
-					$codePointType === \IntlChar::CHAR_CATEGORY_OTHER_SYMBOL ||
-					$codePointType === \IntlChar::CHAR_CATEGORY_FORMAT_CHAR ||
-					$codePointType === \IntlChar::CHAR_CATEGORY_OTHER_PUNCTUATION ||
-					$codePointType === \IntlChar::CHAR_CATEGORY_LOWERCASE_LETTER ||
-					$codePointType === \IntlChar::CHAR_CATEGORY_MATH_SYMBOL ||
-					$codePointType === \IntlChar::CHAR_CATEGORY_ENCLOSING_MARK ||
-					$codePointType === \IntlChar::CHAR_CATEGORY_DECIMAL_DIGIT_NUMBER ||
-					$codePointType === \IntlChar::CHAR_CATEGORY_DASH_PUNCTUATION ||
-					$codePointType === \IntlChar::CHAR_CATEGORY_GENERAL_OTHER_TYPES) {
-					continue;
-				}
+			// If the current code-point is an emoji or a modifier (like a skin-tone)
+			// just continue and check the next character
+			if ($codePointType === \IntlChar::CHAR_CATEGORY_MODIFIER_SYMBOL ||
+				$codePointType === \IntlChar::CHAR_CATEGORY_MODIFIER_LETTER ||
+				$codePointType === \IntlChar::CHAR_CATEGORY_OTHER_SYMBOL ||
+				$codePointType === \IntlChar::CHAR_CATEGORY_GENERAL_OTHER_TYPES) {
+				continue;
 			}
 
 			// If it's neither a modifier nor an emoji, we only allow
