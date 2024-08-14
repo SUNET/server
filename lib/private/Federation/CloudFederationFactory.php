@@ -25,11 +25,47 @@ class CloudFederationFactory implements ICloudFederationFactory {
 	 * @param string $shareType ('group' or 'user' share)
 	 * @param $resourceType ('file', 'calendar',...)
 	 * @return ICloudFederationShare
+	 * @deprecated 30.0.0 use createCloudFederationShare instead
 	 *
 	 * @since 14.0.0
 	 */
 	public function getCloudFederationShare($shareWith, $name, $description, $providerId, $owner, $ownerDisplayName, $sharedBy, $sharedByDisplayName, $sharedSecret, $shareType, $resourceType) {
-		return new CloudFederationShare($shareWith, $name, $description, $providerId, $owner, $ownerDisplayName, $sharedBy, $sharedByDisplayName, $shareType, $resourceType, $sharedSecret);
+		$permissions = '{http://open-cloud-mesh.org/ns}share-permissions';
+		$protocol = array(
+			'singleProtocolLegacy' => [
+				'name' => 'webdav',
+				'options' => [
+					'sharedSecret' => $sharedSecret,
+					'permissions' => $permissions,
+				],
+			]
+		);
+		$expiration = NULL;
+		return $this->createCloudFederationShare($shareWith, $name, $description, $providerId, $owner, $ownerDisplayName, $sharedBy, $sharedByDisplayName, $shareType, $resourceType, $sharedSecret, $expiration, $protocol);
+	}
+
+	/**
+	 * get a CloudFederationShare Object to prepare a share you want to send
+	 *
+	 * @param string   $shareWith
+	 * @param string   $name resource name (e.g. document.odt)
+	 * @param string   $description share description (optional)
+	 * @param string   $providerId resource UID on the provider side
+	 * @param string   $owner provider specific UID of the user who owns the resource
+	 * @param string   $ownerDisplayName display name of the user who shared the item
+	 * @param string   $senderDisplayName display name of the user who shared the resource
+	 * @param string   $sharedSecret used to authenticate requests across servers
+	 * @param string   $shareType ('group' or 'user' share)
+	 * @param string   $resourceType ('file', 'calendar',...)
+	 * @param int|NULL $expiration (optional)
+	 * @param array    $protocol
+	 * @return ICloudFederationShare
+	 *
+	 * @since 30.0.0
+	 */
+	public function createCloudFederationShare($shareWith, $name, $description, $providerId, $owner, $ownerDisplayName, $sharedBy, $sharedByDisplayName, $sharedSecret, $shareType, $resourceType, $expiration, $protocol) {
+		return new CloudFederationShare($shareWith, $name, $description, $providerId, $owner, $ownerDisplayName, $sharedBy, $sharedByDisplayName, $shareType, $resourceType, $sharedSecret, $expiration, $protocol);
+
 	}
 
 	/**

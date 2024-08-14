@@ -1,20 +1,21 @@
 <?php
+
 /**
  * SPDX-FileCopyrightText: 2018 Nextcloud GmbH and Nextcloud contributors
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
+
 namespace OCA\CloudFederationAPI\Controller;
 
 use OCA\CloudFederationAPI\Config;
-use OCA\CloudFederationAPI\ResponseDefinitions;
 use OCA\Federation\TrustedServers;
-use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\BruteForceProtection;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\OpenAPI;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http;
 use OCP\Federation\Exceptions\ActionNotSupportedException;
 use OCP\Federation\Exceptions\AuthenticationFailedException;
 use OCP\Federation\Exceptions\BadRequestException;
@@ -23,12 +24,12 @@ use OCP\Federation\Exceptions\ProviderDoesNotExistsException;
 use OCP\Federation\ICloudFederationFactory;
 use OCP\Federation\ICloudFederationProviderManager;
 use OCP\Federation\ICloudIdManager;
+use OCP\Share\Exceptions\ShareNotFound;
 use OCP\IConfig;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IURLGenerator;
 use OCP\IUserManager;
-use OCP\Share\Exceptions\ShareNotFound;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -41,7 +42,8 @@ use Psr\Log\LoggerInterface;
  * @psalm-import-type CloudFederationAPIError from ResponseDefinitions
  */
 #[OpenAPI(scope: OpenAPI::SCOPE_FEDERATION)]
-class RequestHandlerController extends Controller {
+class RequestHandlerController extends Controller
+{
 	public function __construct(
 		string $appName,
 		IRequest $request,
@@ -68,8 +70,8 @@ class RequestHandlerController extends Controller {
 	 * @param string $providerId Resource UID on the provider side
 	 * @param string $owner Provider specific UID of the user who owns the resource
 	 * @param string|null $ownerDisplayName Display name of the user who shared the item
-	 * @param string|null $sharedBy Provider specific UID of the user who shared the resource
-	 * @param string|null $sharedByDisplayName Display name of the user who shared the resource
+	 * @param string $sender Provider specific UID of the user who shared the resource
+	 * @param string|null $senderDisplayName Display name of the user who shared the resource
 	 * @param array{name: string[], options: array<string, mixed>} $protocol e,.g. ['name' => 'webdav', 'options' => ['username' => 'john', 'permissions' => 31]]
 	 * @param string $shareType 'group' or 'user' share
 	 * @param string $resourceType 'file', 'calendar',...
@@ -82,19 +84,20 @@ class RequestHandlerController extends Controller {
 	#[PublicPage]
 	#[NoCSRFRequired]
 	#[BruteForceProtection(action: 'receiveFederatedShare')]
-	public function addShare($shareWith, $name, $description, $providerId, $owner, $ownerDisplayName, $sharedBy, $sharedByDisplayName, $protocol, $shareType, $resourceType) {
+	public function addShare($shareWith, $name, $description, $providerId, $owner, $ownerDisplayName, $sender, $senderDisplayName, $protocol, $shareType, $resourceType, $expiration): JSONResponse
+	{
+		$new_protocol = $this->normalizeProtocol($protocol);
+		$protocol_valid = $this->validateProtocol($new_protocol);
 		// check if all required parameters are set
-		if ($shareWith === null ||
+		if (
+			$shareWith === null ||
 			$name === null ||
 			$providerId === null ||
 			$owner === null ||
+			$sender === null ||
 			$resourceType === null ||
 			$shareType === null ||
-			!is_array($protocol) ||
-			!isset($protocol['name']) ||
-			!isset($protocol['options']) ||
-			!is_array($protocol['options']) ||
-			!isset($protocol['options']['sharedSecret'])
+			!$protocol_valid
 		) {
 			return new JSONResponse(
 				[
@@ -113,11 +116,10 @@ class RequestHandlerController extends Controller {
 			);
 		}
 
-		$cloudId = $this->cloudIdManager->resolveCloudId($shareWith);
-		$shareWith = $cloudId->getUser();
-
 		if ($shareType === 'user') {
 			$shareWith = $this->mapUid($shareWith);
+			$cloudId = $this->cloudIdManager->resolveCloudId($shareWith);
+			$shareWith = $cloudId->getUser();
 
 			if (!$this->userManager->userExists($shareWith)) {
 				$response = new JSONResponse(
@@ -148,20 +150,15 @@ class RequestHandlerController extends Controller {
 
 		// if no explicit display name is given, we use the uid as display name
 		$ownerDisplayName = $ownerDisplayName === null ? $owner : $ownerDisplayName;
-		$sharedByDisplayName = $sharedByDisplayName === null ? $sharedBy : $sharedByDisplayName;
-
-		// sharedBy* parameter is optional, if nothing is set we assume that it is the same user as the owner
-		if ($sharedBy === null) {
-			$sharedBy = $owner;
-			$sharedByDisplayName = $ownerDisplayName;
-		}
+		$senderDisplayName = $senderDisplayName === null ? $sender : $senderDisplayName;
 
 		try {
 			$provider = $this->cloudFederationProviderManager->getCloudFederationProvider($resourceType);
-			$share = $this->factory->getCloudFederationShare($shareWith, $name, $description, $providerId, $owner, $ownerDisplayName, $sharedBy, $sharedByDisplayName, '', $shareType, $resourceType);
-			$share->setProtocol($protocol);
+
+			$sharedSecret = $this->extractSharedSecret($new_protocol);
+			$share = $this->factory->createCloudFederationShare($shareWith, $name, $description, $providerId, $owner, $ownerDisplayName, $sender, $senderDisplayName, $sharedSecret, $shareType, $resourceType, $expiration, $new_protocol);
 			$provider->shareReceived($share);
-		} catch (ProviderDoesNotExistsException|ProviderCouldNotAddShareException $e) {
+		} catch (ProviderDoesNotExistsException | ProviderCouldNotAddShareException $e) {
 			return new JSONResponse(
 				['message' => $e->getMessage()],
 				Http::STATUS_NOT_IMPLEMENTED
@@ -185,7 +182,8 @@ class RequestHandlerController extends Controller {
 
 		return new JSONResponse(
 			['recipientDisplayName' => $recipientDisplayName],
-			Http::STATUS_CREATED);
+			Http::STATUS_CREATED
+		);
 	}
 
 	/**
@@ -212,36 +210,34 @@ class RequestHandlerController extends Controller {
 	#[PublicPage]
 	#[NoCSRFRequired]
 	#[BruteForceProtection(action: 'inviteAccepted')]
-	public function inviteAccepted(string $recipientProvider, string $token, string $userId, string $email, string $name): JSONResponse {
+	public function inviteAccepted(string $recipientProvider, string $token, string $userId, string $email, string $name): JSONResponse
+	{
 		$this->logger->debug('Invite accepted for ' . $userId . ' with token ' . $token . ' and email ' . $email . ' and name ' . $name);
 		$found_for_this_user = false;
 		foreach ($this->ocConfig->getAppKeys($this->appName) as $key) {
-			if(str_starts_with($key, $token) ){
-				$found_for_this_user = $this->getAppValue($this->appName, $token . '_remote_id') === $userId;
+			if (str_starts_with($key, $token)) {
+				$found_for_this_user = $this->ocConfig->getAppValue($this->appName, $token . '_remote_id') === $userId;
 			}
 		}
-
-
 
 		if (!$found_for_this_user) {
 			$response = ['message' => 'Invalid or non existing token', 'error' => true];
 			$status = Http::STATUS_BAD_REQUEST;
-			return new JSONResponse($response,$status);
+			return new JSONResponse($response, $status);
 		}
 
-		if(!$this->trustedServers->isTrustedServer($recipientProvider)) {
+		if (!$this->trustedServers->isTrustedServer($recipientProvider)) {
 			$response = ['message' => 'Remote server not trusted', 'error' => true];
 			$status = Http::STATUS_FORBIDDEN;
-			return new JSONResponse($response,$status);
+			return new JSONResponse($response, $status);
 		}
 		// Note: Not implementing 404 Invitation token does not exist, instead using 400
 
-		if ($this->ocConfig->getAppValue($this->appName, $token . '_accepted') === true ) {
+		if ($this->ocConfig->getAppValue($this->appName, $token . '_accepted') === true) {
 			$response = ['message' => 'Invite already accepted', 'error' => true];
 			$status = Http::STATUS_CONFLICT;
-			return new JSONResponse($response,$status);
+			return new JSONResponse($response, $status);
 		}
-
 
 		$localId = $this->ocConfig->getAppValue($this->appName, $token . '_local_id');
 		$response = ['usedID' => $localId, 'email' => $email, 'name' => $name];
@@ -252,7 +248,7 @@ class RequestHandlerController extends Controller {
 		//	$this->ocConfig->setAppValue($this->appName, $token . '_local_id', $localId);
 		//	$this->ocConfig->setAppValue($this->appName, $token . '_remote_id', $remoteId);
 
-		return new JSONResponse($response,$status);
+		return new JSONResponse($response, $status);
 	}
 
 	/**
@@ -272,9 +268,11 @@ class RequestHandlerController extends Controller {
 	#[NoCSRFRequired]
 	#[PublicPage]
 	#[BruteForceProtection(action: 'receiveFederatedShareNotification')]
-	public function receiveNotification($notificationType, $resourceType, $providerId, ?array $notification) {
+	public function receiveNotification($notificationType, $resourceType, $providerId, ?array $notification): JSONResponse
+	{
 		// check if all required parameters are set
-		if ($notificationType === null ||
+		if (
+			$notificationType === null ||
 			$resourceType === null ||
 			$providerId === null ||
 			!is_array($notification)
@@ -339,7 +337,8 @@ class RequestHandlerController extends Controller {
 	 * @param string $uid
 	 * @return string mixed
 	 */
-	private function mapUid($uid) {
+	private function mapUid($uid): string
+	{
 		// FIXME this should be a method in the user management instead
 		$this->logger->debug('shareWith before, ' . $uid, ['app' => $this->appName]);
 		\OCP\Util::emitHook(
@@ -350,5 +349,130 @@ class RequestHandlerController extends Controller {
 		$this->logger->debug('shareWith after, ' . $uid, ['app' => $this->appName]);
 
 		return $uid;
+	}
+
+	/**
+	 * Normalize protocol to the new format
+	 * this way we can speak OCM 1.1.0 even with
+	 * older implementations
+	 *
+	 * @param array $protocol
+	 * @return array
+	 */
+	private function normalizeProtocol($protocol): array
+	{
+		if (array_key_exists('name', $protocol)) {
+			return ['singleProtocolLegacy' => $protocol];
+		}
+
+		return $protocol;
+	}
+
+	/**
+	 * Validate the protocol
+	 *  For 1.0.0 this was:
+	 *  !is_array($protocol) ||
+	 *  !isset($protocol['name']) ||
+	 *  !isset($protocol['options']) ||
+	 *  !is_array($protocol['options']) ||
+	 *  !isset($protocol['options']['sharedSecret'])
+	 *
+	 *  Now we chek all the things:
+	 *  https://cs3org.github.io/OCM-API/docs.html?branch=v1.1.0&repo=OCM-API&user=cs3org#/paths/~1shares/post
+	 * @param array $protocol
+	 * @return bool
+	 */
+	private function validateProtocol($protocol): bool
+	{
+		if (!is_array($protocol)) {
+			return false;
+		}
+
+		if (array_key_exists('singleProtocolLegacy', $protocol)) {
+			$name = $protocol['singleProtocolLegacy']['name'];
+			if (!isset($name) || $name !== 'webdav') {
+				return false;
+			}
+			$options = $protocol['singleProtocolLegacy']['options'];
+			if (!isset($options) || !is_array($options) || !isset($options['sharedSecret'])) {
+				return false;
+			}
+			return true;
+		}
+		if (array_key_exists('singleProtocolNew', $protocol)) {
+			$name = $protocol['singleProtocolNew']['name'];
+			if (!isset($name) || $name !== 'webdav') {
+				return false;
+			}
+			$options = $protocol['singleProtocolNew']['options'];
+			if (!isset($options) || !is_array($options) || !isset($options['sharedSecret'])) {
+				return false;
+			}
+			$webdav = $protocol['singleProtocolNew']['webdav'];
+			if (
+				!isset($webdav) ||
+				!is_array($webdav) ||
+				!isset($webdav['sharedSecret']) ||
+				!isset($webdav['permissions']) ||
+				!isset($webdav['uri'])
+			) {
+				return false;
+			}
+			return true;
+		}
+		if (array_key_exists('multipleProtocols', $protocol)) {
+			$name = $protocol['multipleProtocols']['name'];
+			if (!isset($name) || $name !== 'multi') {
+				return false;
+			}
+			$webdav = $protocol['multipleProtocols']['webdav'];
+			$webapp = $protocol['multipleProtocols']['webapp'];
+			$datatx = $protocol['multipleProtocols']['datatx'];
+			if (
+				!isset($webdav) ||
+				!isset($webapp) ||
+				!isset($datatx)
+			) {
+				return false;
+			}
+			if (isset($webdav)) {
+				if (!array_key_exists('uri', $webdav) || !array_key_exists('permissions', $webdav)) {
+					return false;
+				}
+			}
+			if (isset($webapp)) {
+				if (!array_key_exists('uriTemplate', $webapp) || !array_key_exists('viewMode', $webapp)) {
+					return false;
+				}
+			}
+			if (isset($datatx)) {
+				if (!array_key_exists('srcUri', $datatx) || !array_key_exists('size', $datatx)) {
+					return false;
+				}
+			}
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Extracts the shared secret from the protocol array.
+	 * @param array $protocol
+	 * @return string
+	 */
+	private function extractSharedSecret(array $protocol): string
+	{
+		$sharedSecret = '';
+		if (array_key_exists('singleProtocolLegacy', $protocol)) {
+			$sharedSecret = $protocol['singleProtocolLegacy']['options']['sharedSecret'];
+		} elseif (array_key_exists('singleProtocolNew', $protocol)) {
+			$sharedSecret = $protocol['singleProtocolNew']['options']['sharedSecret'];
+		} elseif (array_key_exists('multipleProtocols', $protocol)) {
+			$options = $protocol['multipleProtocols']['options'];
+			if (isset($options)) {
+				$sharedSecret = $options['sharedSecret'];
+			}
+		}
+		return $sharedSecret;
 	}
 }

@@ -34,8 +34,7 @@ class OCMProvider implements IOCMProvider {
 
 	public function __construct(
 		protected IEventDispatcher $dispatcher,
-		IConfig $config,
-		LoggerInterface $logger
+		IConfig $config
 	) {
 		$this->config = $config;
 		$this->provider = 'Nextcloud ' . $config->getSystemValue('version');

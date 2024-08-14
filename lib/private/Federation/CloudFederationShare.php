@@ -1,14 +1,17 @@
 <?php
+
 /**
  * SPDX-FileCopyrightText: 2018 Nextcloud GmbH and Nextcloud contributors
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
+
 namespace OC\Federation;
 
 use OCP\Federation\ICloudFederationShare;
 use OCP\Share\IShare;
 
-class CloudFederationShare implements ICloudFederationShare {
+class CloudFederationShare implements ICloudFederationShare
+{
 	private $share = [
 		'shareWith' => '',
 		'shareType' => '',
@@ -18,54 +21,56 @@ class CloudFederationShare implements ICloudFederationShare {
 		'providerId' => '',
 		'owner' => '',
 		'ownerDisplayName' => '',
-		'sharedBy' => '',
-		'sharedByDisplayName' => '',
-		'protocol' => []
+		'sender' => '',
+		'senderDisplayName' => '',
+		'expiration' => NULL,
+		'protocol' => [],
 	];
 
 	/**
 	 * get a CloudFederationShare Object to prepare a share you want to send
 	 *
-	 * @param string $shareWith
-	 * @param string $name resource name (e.g. document.odt)
-	 * @param string $description share description (optional)
-	 * @param string $providerId resource UID on the provider side
-	 * @param string $owner provider specific UID of the user who owns the resource
-	 * @param string $ownerDisplayName display name of the user who shared the item
-	 * @param string $sharedBy provider specific UID of the user who shared the resource
-	 * @param string $sharedByDisplayName display name of the user who shared the resource
-	 * @param string $shareType ('group' or 'user' share)
-	 * @param string $resourceType ('file', 'calendar',...)
-	 * @param string $sharedSecret
+	 * @param string   $shareWith
+	 * @param string   $name resource name (e.g. document.odt)
+	 * @param string   $description share description (optional)
+	 * @param string   $providerId resource UID on the provider side
+	 * @param string   $owner provider specific UID of the user who owns the resource
+	 * @param string   $ownerDisplayName display name of the user who shared the item
+	 * @param string   $sender provider specific UID of the user who shared the resource
+	 * @param string   $senderDisplayName display name of the user who shared the resource
+	 * @param string   $shareType ('group' or 'user' share)
+	 * @param string   $resourceType ('file', 'calendar',...)
+	 * @param string   $sharedSecret
+	 * @param int|NULL $expiration
+	 * @param array    $protocol
 	 */
-	public function __construct($shareWith = '',
+	public function __construct(
+		$shareWith = '',
 		$name = '',
 		$description = '',
 		$providerId = '',
 		$owner = '',
 		$ownerDisplayName = '',
-		$sharedBy = '',
-		$sharedByDisplayName = '',
+		$sender = '',
+		$senderDisplayName = '',
 		$shareType = '',
 		$resourceType = '',
-		$sharedSecret = ''
+		$sharedSecret = '',
+		$expiration = NULL,
+		$protocol = [],
 	) {
 		$this->setShareWith($shareWith);
 		$this->setResourceName($name);
 		$this->setDescription($description);
+		$this->setExpiration($expiration);
 		$this->setProviderId($providerId);
 		$this->setOwner($owner);
 		$this->setOwnerDisplayName($ownerDisplayName);
-		$this->setSharedBy($sharedBy);
-		$this->setSharedByDisplayName($sharedByDisplayName);
-		$this->setProtocol([
-			'name' => 'webdav',
-			'options' => [
-				'sharedSecret' => $sharedSecret,
-				'permissions' => '{http://open-cloud-mesh.org/ns}share-permissions'
-			]
-		]);
+		$this->setSender($sender);
+		$this->setSenderDisplayName($senderDisplayName);
 		$this->setShareType($shareType);
+		$this->setProtocol($protocol);
+		$this->setShareSecret($sharedSecret);
 		$this->setResourceType($resourceType);
 	}
 
@@ -76,7 +81,8 @@ class CloudFederationShare implements ICloudFederationShare {
 	 *
 	 * @since 14.0.0
 	 */
-	public function setShareWith($user) {
+	public function setShareWith($user)
+	{
 		$this->share['shareWith'] = $user;
 	}
 
@@ -87,7 +93,8 @@ class CloudFederationShare implements ICloudFederationShare {
 	 *
 	 * @since 14.0.0
 	 */
-	public function setResourceName($name) {
+	public function setResourceName($name)
+	{
 		$this->share['name'] = $name;
 	}
 
@@ -98,7 +105,8 @@ class CloudFederationShare implements ICloudFederationShare {
 	 *
 	 * @since 14.0.0
 	 */
-	public function setResourceType($resourceType) {
+	public function setResourceType($resourceType)
+	{
 		$this->share['resourceType'] = $resourceType;
 	}
 
@@ -109,10 +117,22 @@ class CloudFederationShare implements ICloudFederationShare {
 	 *
 	 * @since 14.0.0
 	 */
-	public function setDescription($description) {
+	public function setDescription($description)
+	{
 		$this->share['description'] = $description;
 	}
 
+	/**
+	 * set resource expiration (optional)
+	 *
+	 * @param int $expiration
+	 *
+	 * @since 30.0.0
+	 */
+	public function setExpiration($expiration)
+	{
+		$this->share['expiration'] = $expiration;
+	}
 	/**
 	 * set provider ID (e.g. file ID)
 	 *
@@ -120,7 +140,8 @@ class CloudFederationShare implements ICloudFederationShare {
 	 *
 	 * @since 14.0.0
 	 */
-	public function setProviderId($providerId) {
+	public function setProviderId($providerId)
+	{
 		$this->share['providerId'] = $providerId;
 	}
 
@@ -131,7 +152,8 @@ class CloudFederationShare implements ICloudFederationShare {
 	 *
 	 * @since 14.0.0
 	 */
-	public function setOwner($owner) {
+	public function setOwner($owner)
+	{
 		$this->share['owner'] = $owner;
 	}
 
@@ -142,7 +164,8 @@ class CloudFederationShare implements ICloudFederationShare {
 	 *
 	 * @since 14.0.0
 	 */
-	public function setOwnerDisplayName($ownerDisplayName) {
+	public function setOwnerDisplayName($ownerDisplayName)
+	{
 		$this->share['ownerDisplayName'] = $ownerDisplayName;
 	}
 
@@ -150,22 +173,49 @@ class CloudFederationShare implements ICloudFederationShare {
 	 * set UID of the user who sends the share
 	 *
 	 * @param string $sharedBy
+	 * @deprecated 30.0.0 use setSender instead
 	 *
 	 * @since 14.0.0
 	 */
-	public function setSharedBy($sharedBy) {
-		$this->share['sharedBy'] = $sharedBy;
+	public function setSharedBy($sharedBy)
+	{
+		$this->setSender($sharedBy);
+	}
+	/**
+	 * set UID of the user who sends the share
+	 *
+	 * @param string $sender
+	 *
+	 * @since 30.0.0
+	 */
+	public function setSender($sender)
+	{
+		$this->share['sender'] = $sender;
 	}
 
 	/**
 	 * set display name of the user who sends the share
 	 *
 	 * @param $sharedByDisplayName
+	 * @deprecated 30.0.0 use setSenderDisplayName instead
 	 *
 	 * @since 14.0.0
 	 */
-	public function setSharedByDisplayName($sharedByDisplayName) {
-		$this->share['sharedByDisplayName'] = $sharedByDisplayName;
+	public function setSharedByDisplayName($sharedByDisplayName)
+	{
+		$this->setSender($sharedByDisplayName);
+	}
+
+	/**
+	 * set display name of the user who sends the share
+	 *
+	 * @param $senderDisplayName
+	 *
+	 * @since 30.0.0
+	 */
+	public function setSenderDisplayName($senderDisplayName)
+	{
+		$this->share['senderDisplayName'] = $senderDisplayName;
 	}
 
 	/**
@@ -175,23 +225,39 @@ class CloudFederationShare implements ICloudFederationShare {
 	 *
 	 * @since 14.0.0
 	 */
-	public function setProtocol(array $protocol) {
+	public function setProtocol(array $protocol)
+	{
 		$this->share['protocol'] = $protocol;
 	}
 
 	/**
-	 * share type (group or user)
+	 * share type (group, user or federation)
 	 *
 	 * @param string $shareType
 	 *
 	 * @since 14.0.0
 	 */
-	public function setShareType($shareType) {
+	public function setShareType($shareType)
+	{
 		if ($shareType === 'group' || $shareType === IShare::TYPE_REMOTE_GROUP) {
 			$this->share['shareType'] = 'group';
+		} elseif ($shareType == 'federation') {
+			$this->share['shareType'] = 'federation';
 		} else {
 			$this->share['shareType'] = 'user';
 		}
+	}
+
+	/**
+	 * set the shared secret
+	 *
+	 * @param string $sharedSecret
+	 *
+	 * @since 30.0.0
+	 */
+	public function setShareSecret($sharedSecret)
+	{
+		$this->share['sharedSecret'] = $sharedSecret;
 	}
 
 	/**
@@ -201,7 +267,8 @@ class CloudFederationShare implements ICloudFederationShare {
 	 *
 	 * @since 14.0.0
 	 */
-	public function getShare() {
+	public function getShare()
+	{
 		return $this->share;
 	}
 
@@ -212,7 +279,8 @@ class CloudFederationShare implements ICloudFederationShare {
 	 *
 	 * @since 14.0.0
 	 */
-	public function getShareWith() {
+	public function getShareWith()
+	{
 		return $this->share['shareWith'];
 	}
 
@@ -223,7 +291,8 @@ class CloudFederationShare implements ICloudFederationShare {
 	 *
 	 * @since 14.0.0
 	 */
-	public function getResourceName() {
+	public function getResourceName()
+	{
 		return $this->share['name'];
 	}
 
@@ -234,7 +303,8 @@ class CloudFederationShare implements ICloudFederationShare {
 	 *
 	 * @since 14.0.0
 	 */
-	public function getResourceType() {
+	public function getResourceType()
+	{
 		return $this->share['resourceType'];
 	}
 
@@ -245,7 +315,8 @@ class CloudFederationShare implements ICloudFederationShare {
 	 *
 	 * @since 14.0.0
 	 */
-	public function getDescription() {
+	public function getDescription()
+	{
 		return $this->share['description'];
 	}
 
@@ -256,7 +327,8 @@ class CloudFederationShare implements ICloudFederationShare {
 	 *
 	 * @since 14.0.0
 	 */
-	public function getProviderId() {
+	public function getProviderId()
+	{
 		return $this->share['providerId'];
 	}
 
@@ -267,7 +339,8 @@ class CloudFederationShare implements ICloudFederationShare {
 	 *
 	 * @since 14.0.0
 	 */
-	public function getOwner() {
+	public function getOwner()
+	{
 		return $this->share['owner'];
 	}
 
@@ -278,7 +351,8 @@ class CloudFederationShare implements ICloudFederationShare {
 	 *
 	 * @since 14.0.0
 	 */
-	public function getOwnerDisplayName() {
+	public function getOwnerDisplayName()
+	{
 		return $this->share['ownerDisplayName'];
 	}
 
@@ -286,11 +360,38 @@ class CloudFederationShare implements ICloudFederationShare {
 	 * get UID of the user who sends the share
 	 *
 	 * @return string
+	 * @deprecated 30.0.0 use getSender() instead
 	 *
 	 * @since 14.0.0
 	 */
-	public function getSharedBy() {
-		return $this->share['sharedBy'];
+	public function getSharedBy()
+	{
+		return $this->getSender();
+	}
+
+	/**
+	 * get UID of the user who sends the share
+	 *
+	 * @return string
+	 *
+	 * @since 30.0.0
+	 */
+	public function getSender()
+	{
+		return $this->share['sender'];
+	}
+
+	/**
+	 * get display name of the user who sends the share
+	 *
+	 * @return string
+	 * @deprecated 30.0.0 use getSenderDisplayName() instead
+	 *
+	 * @since 14.0.0
+	 */
+	public function getSharedByDisplayName()
+	{
+		return $this->getSenderDisplayName();
 	}
 
 	/**
@@ -300,8 +401,9 @@ class CloudFederationShare implements ICloudFederationShare {
 	 *
 	 * @since 14.0.0
 	 */
-	public function getSharedByDisplayName() {
-		return $this->share['sharedByDisplayName'];
+	public function getSenderDisplayName()
+	{
+		return $this->share['senderDisplayName'];
 	}
 
 	/**
@@ -311,7 +413,8 @@ class CloudFederationShare implements ICloudFederationShare {
 	 *
 	 * @since 14.0.0
 	 */
-	public function getShareType() {
+	public function getShareType()
+	{
 		return $this->share['shareType'];
 	}
 
@@ -322,7 +425,8 @@ class CloudFederationShare implements ICloudFederationShare {
 	 *
 	 * @since 14.0.0
 	 */
-	public function getShareSecret() {
+	public function getShareSecret()
+	{
 		return $this->share['protocol']['options']['sharedSecret'];
 	}
 
@@ -333,7 +437,8 @@ class CloudFederationShare implements ICloudFederationShare {
 	 *
 	 * @since 14.0.0
 	 */
-	public function getProtocol() {
+	public function getProtocol()
+	{
 		return $this->share['protocol'];
 	}
 }

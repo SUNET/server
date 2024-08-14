@@ -22,12 +22,22 @@ interface ICloudFederationShare {
 	public function setShareWith($user);
 
 	/**
+	 * set sharedSecret
+	 *
+	 * @param string $sharedSecret
+	 *
+	 * @since 30.0.0
+	 */
+	public function setShareSecret($sharedSecret);
+
+	/**
 	 * set resource name (e.g. file, calendar, contact,...)
 	 *
 	 * @param string $name
 	 *
 	 * @since 14.0.0
 	 */
+
 	public function setResourceName($name);
 
 	/**
@@ -79,19 +89,48 @@ interface ICloudFederationShare {
 	 * set UID of the user who sends the share
 	 *
 	 * @param string $sharedBy
+	 * @deprecated 30.0.0 use setSender() instead
 	 *
 	 * @since 14.0.0
 	 */
 	public function setSharedBy($sharedBy);
 
 	/**
+	 * set UID of the user who sends the share
+	 *
+	 * @param string $sender
+	 *
+	 * @since 30.0.0
+	 */
+	public function setSender($sender);
+
+	/**
 	 * set display name of the user who sends the share
 	 *
 	 * @param $sharedByDisplayName
+	 * @deprecated 30.0.0 use setSenderDisplayName() instead
 	 *
 	 * @since 14.0.0
 	 */
 	public function setSharedByDisplayName($sharedByDisplayName);
+
+	/**
+	 * set display name of the user who sends the share
+	 *
+	 * @param string $senderDisplayName
+	 *
+	 * @since 30.0.0
+	 */
+	public function setSenderDisplayName($senderDisplayName);
+
+	/**
+	 * set expiration time in seconds of UTC time since Unix epoch
+	 *
+	 * @param int
+	 *
+	 * @since 30.0.0
+	 */
+	public function setExpiration(int $expiration);
 
 	/**
 	 * set protocol specification
