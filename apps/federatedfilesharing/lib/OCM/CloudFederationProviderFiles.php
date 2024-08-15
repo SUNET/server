@@ -88,7 +88,27 @@ class CloudFederationProviderFiles implements ICloudFederationProvider {
 		}
 
 		$protocol = $share->getProtocol();
-		if ($protocol['name'] !== 'webdav') {
+		$name = '';
+		if (array_key_exists('name', $protocol)) {
+			// OCM 1.0.0 https://cs3org.github.io/OCM-API/docs.html?branch=v1.0.0&repo=OCM-API&user=cs3org#/paths/~1shares/post
+			$name = $protocol['name'];
+		} else {
+			// OCM 1.1.0 https://cs3org.github.io/OCM-API/docs.html?branch=v1.1.0&repo=OCM-API&user=cs3org#/paths/~1shares/post
+			if (array_key_exists('singleProtocolLegacy', $protocol)) {
+				$name = $protocol['singleProtocolLegacy']['name'];
+			}
+			elseif (array_key_exists('singleProtocolLegacy', $protocol)) {
+				$name = $protocol['singleProtocolNew']['name'];
+			}
+			elseif (array_key_exists('multipleProtocols', $protocol)) {
+				if(array_key_exists('webdav', $protocol['multipleProtocols'])) {
+					$name = 'webdav';
+				}
+			}
+		}
+
+
+		if ($name !== 'webdav') {
 			throw new ProviderCouldNotAddShareException('Unsupported protocol for data exchange.', '', Http::STATUS_NOT_IMPLEMENTED);
 		}
 
@@ -212,6 +232,7 @@ class CloudFederationProviderFiles implements ICloudFederationProvider {
 				return $this->undoReshare($providerId, $notification);
 			case 'RESHARE_CHANGE_PERMISSION':
 				return $this->updateResharePermissions($providerId, $notification);
+			// TODO: Implement USER_REMOVED
 		}
 
 
