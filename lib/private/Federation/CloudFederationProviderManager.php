@@ -6,6 +6,7 @@ declare(strict_types=1);
  * SPDX-FileCopyrightText: 2018 Nextcloud GmbH and Nextcloud contributors
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
+
 namespace OC\Federation;
 
 use OC\AppFramework\Http;
@@ -30,7 +31,8 @@ use Psr\Log\LoggerInterface;
  *
  * @package OC\Federation
  */
-class CloudFederationProviderManager implements ICloudFederationProviderManager {
+class CloudFederationProviderManager implements ICloudFederationProviderManager
+{
 	/** @var array list of available cloud federation providers */
 	private array $cloudFederationProvider = [];
 
@@ -41,8 +43,7 @@ class CloudFederationProviderManager implements ICloudFederationProviderManager 
 		private ICloudIdManager $cloudIdManager,
 		private IOCMDiscoveryService $discoveryService,
 		private LoggerInterface $logger
-	) {
-	}
+	) {}
 
 
 	/**
@@ -52,7 +53,8 @@ class CloudFederationProviderManager implements ICloudFederationProviderManager 
 	 * @param string $displayName user facing name of the federated share provider
 	 * @param callable $callback
 	 */
-	public function addCloudFederationProvider($resourceType, $displayName, callable $callback) {
+	public function addCloudFederationProvider($resourceType, $displayName, callable $callback)
+	{
 		$this->cloudFederationProvider[$resourceType] = [
 			'resourceType' => $resourceType,
 			'displayName' => $displayName,
@@ -65,7 +67,8 @@ class CloudFederationProviderManager implements ICloudFederationProviderManager 
 	 *
 	 * @param string $providerId
 	 */
-	public function removeCloudFederationProvider($providerId) {
+	public function removeCloudFederationProvider($providerId)
+	{
 		unset($this->cloudFederationProvider[$providerId]);
 	}
 
@@ -74,7 +77,8 @@ class CloudFederationProviderManager implements ICloudFederationProviderManager 
 	 *
 	 * @return array [resourceType => ['resourceType' => $resourceType, 'displayName' => $displayName, 'callback' => callback]]
 	 */
-	public function getAllCloudFederationProviders() {
+	public function getAllCloudFederationProviders()
+	{
 		return $this->cloudFederationProvider;
 	}
 
@@ -85,7 +89,8 @@ class CloudFederationProviderManager implements ICloudFederationProviderManager 
 	 * @return ICloudFederationProvider
 	 * @throws ProviderDoesNotExistsException
 	 */
-	public function getCloudFederationProvider($resourceType) {
+	public function getCloudFederationProvider($resourceType)
+	{
 		if (isset($this->cloudFederationProvider[$resourceType])) {
 			return call_user_func($this->cloudFederationProvider[$resourceType]['callback']);
 		} else {
@@ -96,7 +101,8 @@ class CloudFederationProviderManager implements ICloudFederationProviderManager 
 	/**
 	 * @deprecated 29.0.0 - Use {@see sendCloudShare()} instead and handle errors manually
 	 */
-	public function sendShare(ICloudFederationShare $share) {
+	public function sendShare(ICloudFederationShare $share)
+	{
 		$cloudID = $this->cloudIdManager->resolveCloudId($share->getShareWith());
 		try {
 			$ocmProvider = $this->discoveryService->discover($cloudID->getRemote());
@@ -137,14 +143,20 @@ class CloudFederationProviderManager implements ICloudFederationProviderManager 
 	 * @return IResponse
 	 * @throws OCMProviderException
 	 */
-	public function sendCloudShare(ICloudFederationShare $share): IResponse {
+	public function sendCloudShare(ICloudFederationShare $share): IResponse
+	{
 		$cloudID = $this->cloudIdManager->resolveCloudId($share->getShareWith());
 		$ocmProvider = $this->discoveryService->discover($cloudID->getRemote());
+		$version = $ocmProvider->getApiVersion();
+		$send_share = $share->getShare();
+		if (str_starts_with($version, '1.0')) {
+			$send_share = $share->toLegacyShare();
+		}
 
 		$client = $this->httpClientService->newClient();
 		try {
 			return $client->post($ocmProvider->getEndPoint() . '/shares', [
-				'body' => json_encode($share->getShare()),
+				'body' => json_encode($send_share),
 				'headers' => ['content-type' => 'application/json'],
 				'verify' => !$this->config->getSystemValueBool('sharing.federation.allowSelfSignedCertificates', false),
 				'timeout' => 10,
@@ -166,7 +178,8 @@ class CloudFederationProviderManager implements ICloudFederationProviderManager 
 	 * @return array|false
 	 * @deprecated 29.0.0 - Use {@see sendCloudNotification()} instead and handle errors manually
 	 */
-	public function sendNotification($url, ICloudFederationNotification $notification) {
+	public function sendNotification($url, ICloudFederationNotification $notification)
+	{
 		try {
 			$ocmProvider = $this->discoveryService->discover($url);
 		} catch (OCMProviderException $e) {
@@ -200,7 +213,8 @@ class CloudFederationProviderManager implements ICloudFederationProviderManager 
 	 * @return IResponse
 	 * @throws OCMProviderException
 	 */
-	public function sendCloudNotification(string $url, ICloudFederationNotification $notification): IResponse {
+	public function sendCloudNotification(string $url, ICloudFederationNotification $notification): IResponse
+	{
 		$ocmProvider = $this->discoveryService->discover($url);
 
 		$client = $this->httpClientService->newClient();
@@ -227,7 +241,8 @@ class CloudFederationProviderManager implements ICloudFederationProviderManager 
 	 *
 	 * @return bool
 	 */
-	public function isReady() {
+	public function isReady()
+	{
 		return $this->appManager->isEnabledForUser('cloud_federation_api');
 	}
 }

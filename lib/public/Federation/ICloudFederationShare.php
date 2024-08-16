@@ -13,6 +13,15 @@ namespace OCP\Federation;
  */
 interface ICloudFederationShare {
 	/**
+	 * get the share in 1.0 format ready to send out
+	 *
+	 * @return array
+	 *
+	 * @since 30.0.0
+	 */
+	public function toLegacyShare();
+
+	/**
 	 * set uid of the recipient
 	 *
 	 * @param string $user

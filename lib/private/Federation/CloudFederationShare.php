@@ -75,6 +75,36 @@ class CloudFederationShare implements ICloudFederationShare
 	}
 
 	/**
+	 * get the share in 1.0 format ready to send out
+	 *
+	 * @return array
+	 *
+	 * @since 30.0.0
+	 */
+	public function toLegacyShare()
+	{
+		$sharedSecret = $this->getShareSecret();
+		$protocol = array(
+			'name' => 'webdav',
+			'options' => array('sharedSecret' => $sharedSecret, 'permissions' => '{http://open-cloud-mesh.org/ns}share-permissions')
+		);
+		$share = [
+			'shareWith' => $this->getShareWith(),
+			'name' => $this->getResourceName(),
+			'description' => $this->getDescription(),
+			'providerId' => $this->getProviderId(),
+			'owner' => $this->getOwner(),
+			'sender' => $this->getSender(),
+			'ownerDisplayName' => $this->getOwnerDisplayName(),
+			'senderDisplayName' => $this->getSenderDisplayName(),
+			'shareType' => $this->getShareType(),
+			'resourceType' => $this->getResourceType(),
+			'protocol' => $protocol,
+		];
+		return $share;
+	}
+
+	/**
 	 * set uid of the recipient
 	 *
 	 * @param string $user
