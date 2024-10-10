@@ -25,7 +25,7 @@ use OCP\Federation\ICloudFederationFactory;
 use OCP\Federation\ICloudFederationProviderManager;
 use OCP\Federation\ICloudIdManager;
 use OCP\Share\Exceptions\ShareNotFound;
-use OCP\IConfig;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IURLGenerator;
@@ -52,8 +52,8 @@ class RequestHandlerController extends Controller
 		private IGroupManager $groupManager,
 		private IURLGenerator $urlGenerator,
 		private ICloudFederationProviderManager $cloudFederationProviderManager,
+		private IQueryBuilder $queryBuilder,
 		private Config $config,
-		private IConfig $ocConfig,
 		private ICloudFederationFactory $factory,
 		private ICloudIdManager $cloudIdManager,
 		private TrustedServers $trustedServers
@@ -213,14 +213,24 @@ class RequestHandlerController extends Controller
 	public function inviteAccepted(string $recipientProvider, string $token, string $userId, string $email, string $name): JSONResponse
 	{
 		$this->logger->debug('Invite accepted for ' . $userId . ' with token ' . $token . ' and email ' . $email . ' and name ' . $name);
-		$found_for_this_user = false;
-		foreach ($this->ocConfig->getAppKeys($this->appName) as $key) {
-			if (str_starts_with($key, $token)) {
-				$found_for_this_user = $this->ocConfig->getAppValue($this->appName, $token . '_remote_id') === $userId;
-			}
-		}
+		$this->queryBuilder->select('id', 'sender', 'email', 'name', 'status')
+			->from('federated_invites')
+			->where('token', $this->queryBuilder->expr()->eq($token, $this->queryBuilder->createNamedParameter($token)))
+			->andWhere('userId', $this->queryBuilder->expr()->eq($userId, $this->queryBuilder->createNamedParameter($userId)))
+			->andWhere('recipientProvider', $this->queryBuilder->expr()->eq($recipientProvider, $this->queryBuilder->createNamedParameter($recipientProvider)))
+		;
+		$result = $this->queryBuilder->executeQuery();
+		// If we found something, that means the invitation is valid
+		$rows = $result->fetchAll();
+		$id = $rows[0]['id'];
+		$sender = $rows[0]['sender'];
+		$email = $rows[0]['email'];
+		$name = $rows[0]['name'];
+		$status = $rows[0]['status'];
+		$valid = $id and $sender and $email and $name and $status and (sizeof($rows) == 1);
+		$result->closeCursor();
 
-		if (!$found_for_this_user) {
+		if (!$valid) {
 			$response = ['message' => 'Invalid or non existing token', 'error' => true];
 			$status = Http::STATUS_BAD_REQUEST;
 			return new JSONResponse($response, $status);
@@ -233,26 +243,24 @@ class RequestHandlerController extends Controller
 		}
 		// Note: Not implementing 404 Invitation token does not exist, instead using 400
 
-		if ($this->ocConfig->getAppValue($this->appName, $token . '_accepted') === true) {
+		$accepted = ['accepted', 'processed'];
+		if (in_array($status, $accepted)) {
 			$response = ['message' => 'Invite already accepted', 'error' => true];
 			$status = Http::STATUS_CONFLICT;
 			return new JSONResponse($response, $status);
 		}
 
-		$localId = $this->ocConfig->getAppValue($this->appName, $token . '_local_id');
-		$response = ['usedID' => $localId, 'email' => $email, 'name' => $name];
+		$this->queryBuilder->update('federated_invites')
+			->set('status', 'accepted')
+			->where($this->queryBuilder->expr()->eq('id', $this->queryBuilder->createNamedParameter($id)))
+			->executeStatement();
+		$response = ['usedID' => $sender, 'email' => $email, 'name' => $name];
 		$status = Http::STATUS_OK;
-		$this->ocConfig->setAppValue($this->appName, $token . '_accepted', true);
-		//  TODO: Set these values where the invitation workflow is implemented
-		//  $this->ocConfig->setAppValue($this->appName, $token . '_accepted', false);
-		//	$this->ocConfig->setAppValue($this->appName, $token . '_local_id', $localId);
-		//	$this->ocConfig->setAppValue($this->appName, $token . '_remote_id', $remoteId);
 
 		return new JSONResponse($response, $status);
 	}
 
 	/**
-	 * Send a notification about an existing share
 	 *
 	 * @param string $notificationType Notification type, e.g. SHARE_ACCEPTED
 	 * @param string $resourceType calendar, file, contact,...

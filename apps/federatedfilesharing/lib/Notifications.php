@@ -196,7 +196,7 @@ class Notifications {
 	}
 
 	/**
-	 * forward accept reShare to remote server
+	 * sernd accept share notification to remote server
 	 *
 	 * @param string $remote
 	 * @param string $remoteId
@@ -207,7 +207,7 @@ class Notifications {
 	}
 
 	/**
-	 * forward decline reShare to remote server
+	 * send decline share notification to remote server
 	 *
 	 * @param string $remote
 	 * @param string $remoteId
