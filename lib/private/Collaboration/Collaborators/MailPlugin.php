@@ -205,6 +205,17 @@ class MailPlugin implements ISearchPlugin {
 								'shareWith' => $emailAddress,
 							],
 						];
+
+						/*$result['exact'][] = [
+							'label' => $displayName,
+							'uuid' => $contact['UID'] ?? $emailAddress,
+							'name' => $contact['FN'] ?? $displayName,
+							'type' => $emailAddressType ?? '',
+							'value' => [
+								'shareType' => IShare::TYPE_INVITATION_LINK,
+								'shareWith' => $emailAddress,
+							],
+						];*/
 					} else {
 						$result['wide'][] = [
 							'label' => $displayName,
@@ -216,6 +227,17 @@ class MailPlugin implements ISearchPlugin {
 								'shareWith' => $emailAddress,
 							],
 						];
+
+						/*$result['exact'][] = [
+							'label' => $displayName,
+							'uuid' => $contact['UID'] ?? $emailAddress,
+							'name' => $contact['FN'] ?? $displayName,
+							'type' => $emailAddressType ?? '',
+							'value' => [
+								'shareType' => IShare::TYPE_INVITATION_LINK,
+								'shareWith' => $emailAddress,
+							],
+						];*/
 					}
 				}
 			}
@@ -239,6 +261,16 @@ class MailPlugin implements ISearchPlugin {
 					'shareWith' => $search,
 				],
 			];
+			/*$result['exact'][] = [
+				'label' => $displayName,
+				'uuid' => $contact['UID'] ?? $emailAddress,
+				'name' => $contact['FN'] ?? $displayName,
+				'type' => $emailAddressType ?? '',
+				'value' => [
+					'shareType' => IShare::TYPE_INVITATION_LINK,
+					'shareWith' => $emailAddress,
+				],
+			];*/
 		}
 
 		if (!empty($userResults['wide'])) {

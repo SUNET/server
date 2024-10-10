@@ -146,6 +146,7 @@ class ShareesAPIController extends OCSController {
 
 			if ($this->shareManager->shareProviderExists(IShare::TYPE_EMAIL)) {
 				$shareTypes[] = IShare::TYPE_EMAIL;
+				$shareTypes[] = IShare::TYPE_INVITATION_LINK;
 			}
 
 			if ($this->shareManager->shareProviderExists(IShare::TYPE_ROOM)) {
@@ -160,6 +161,7 @@ class ShareesAPIController extends OCSController {
 				$shareTypes[] = IShare::TYPE_GROUP;
 			}
 			$shareTypes[] = IShare::TYPE_EMAIL;
+			$shareTypes[] = IShare::TYPE_INVITATION_LINK;
 		}
 
 		// FIXME: DI
@@ -170,7 +172,7 @@ class ShareesAPIController extends OCSController {
 		if ($this->shareManager->shareProviderExists(IShare::TYPE_SCIENCEMESH)) {
 			$shareTypes[] = IShare::TYPE_SCIENCEMESH;
 		}
-
+		
 		if ($shareType !== null && is_array($shareType)) {
 			$shareTypes = array_intersect($shareTypes, $shareType);
 		} elseif (is_numeric($shareType)) {
