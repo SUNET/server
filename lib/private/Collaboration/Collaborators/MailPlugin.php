@@ -206,16 +206,16 @@ class MailPlugin implements ISearchPlugin {
 							],
 						];
 
-						/*$result['exact'][] = [
-							'label' => $displayName,
-							'uuid' => $contact['UID'] ?? $emailAddress,
-							'name' => $contact['FN'] ?? $displayName,
+						$result['exact'][] = [
+							'label' => $search,
+							'uuid' => $search,
+							'name' => $search,
 							'type' => $emailAddressType ?? '',
 							'value' => [
 								'shareType' => IShare::TYPE_INVITATION_LINK,
 								'shareWith' => $emailAddress,
 							],
-						];*/
+						];
 					} else {
 						$result['wide'][] = [
 							'label' => $displayName,
@@ -228,16 +228,16 @@ class MailPlugin implements ISearchPlugin {
 							],
 						];
 
-						/*$result['exact'][] = [
-							'label' => $displayName,
-							'uuid' => $contact['UID'] ?? $emailAddress,
-							'name' => $contact['FN'] ?? $displayName,
+						$result['exact'][] = [
+							'label' => $search,
+							'uuid' => $search,
+							'name' => $search,
 							'type' => $emailAddressType ?? '',
 							'value' => [
 								'shareType' => IShare::TYPE_INVITATION_LINK,
 								'shareWith' => $emailAddress,
 							],
-						];*/
+						];
 					}
 				}
 			}
@@ -261,23 +261,22 @@ class MailPlugin implements ISearchPlugin {
 					'shareWith' => $search,
 				],
 			];
-			/*$result['exact'][] = [
-				'label' => $displayName,
-				'uuid' => $contact['UID'] ?? $emailAddress,
-				'name' => $contact['FN'] ?? $displayName,
+			$result['exact'][] = [
+				'label' => $search,
+				'uuid' => $search,
+				'name' => $search,
 				'type' => $emailAddressType ?? '',
 				'value' => [
 					'shareType' => IShare::TYPE_INVITATION_LINK,
 					'shareWith' => $emailAddress,
 				],
-			];*/
+			];
 		}
 
 		if (!empty($userResults['wide'])) {
 			$searchResult->addResultSet($userType, $userResults['wide'], []);
 		}
 		$searchResult->addResultSet($emailType, $result['wide'], $result['exact']);
-
 		return !$reachedEnd;
 	}
 
