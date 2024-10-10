@@ -32,12 +32,10 @@ class CloudFederationFactory implements ICloudFederationFactory {
 	public function getCloudFederationShare($shareWith, $name, $description, $providerId, $owner, $ownerDisplayName, $sharedBy, $sharedByDisplayName, $sharedSecret, $shareType, $resourceType) {
 		$permissions = '{http://open-cloud-mesh.org/ns}share-permissions';
 		$protocol = array(
-			'singleProtocolLegacy' => [
-				'name' => 'webdav',
-				'options' => [
-					'sharedSecret' => $sharedSecret,
-					'permissions' => $permissions,
-				],
+			'name' => 'webdav',
+			'options' => [
+				'sharedSecret' => $sharedSecret,
+				'permissions' => $permissions,
 			]
 		);
 		$expiration = NULL;

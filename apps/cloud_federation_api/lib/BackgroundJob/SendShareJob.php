@@ -63,17 +63,15 @@ class SendShareJob extends Job
 		$receiver = $argument['recipient'];
 		$uri = $argument['uri'];
 		$protocol = [
-			'singleProtocolNew' => [
-				'name' => 'webdav',
-				'options' => [
-					'sharedSecret' => $sharedSecret,
-				],
-				'webdav' => [
-					'sharedSecret' => $sharedSecret,
-					'permissions' => $permissions,
-					'uri' => $uri
+			'name' => 'webdav',
+			'options' => [
+				'sharedSecret' => $sharedSecret,
+			],
+			'webdav' => [
+				'sharedSecret' => $sharedSecret,
+				'permissions' => $permissions,
+				'uri' => $uri
 
-				]
 			]
 		];
 

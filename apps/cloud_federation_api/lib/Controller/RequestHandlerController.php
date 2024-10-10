@@ -86,8 +86,7 @@ class RequestHandlerController extends Controller
 	#[BruteForceProtection(action: 'receiveFederatedShare')]
 	public function addShare($shareWith, $name, $description, $providerId, $owner, $ownerDisplayName, $sender, $senderDisplayName, $protocol, $shareType, $resourceType, $expiration): JSONResponse
 	{
-		$new_protocol = $this->normalizeProtocol($protocol);
-		$protocol_valid = $this->validateProtocol($new_protocol);
+		$protocol_valid = $this->validateProtocol($protocol);
 		// check if all required parameters are set
 		if (
 			$shareWith === null ||
@@ -155,8 +154,8 @@ class RequestHandlerController extends Controller
 		try {
 			$provider = $this->cloudFederationProviderManager->getCloudFederationProvider($resourceType);
 
-			$sharedSecret = $this->extractSharedSecret($new_protocol);
-			$share = $this->factory->createCloudFederationShare($shareWith, $name, $description, $providerId, $owner, $ownerDisplayName, $sender, $senderDisplayName, $sharedSecret, $shareType, $resourceType, $expiration, $new_protocol);
+			$sharedSecret = $this->extractSharedSecret($protocol);
+			$share = $this->factory->createCloudFederationShare($shareWith, $name, $description, $providerId, $owner, $ownerDisplayName, $sender, $senderDisplayName, $sharedSecret, $shareType, $resourceType, $expiration, $protocol);
 			$provider->shareReceived($share);
 		} catch (ProviderDoesNotExistsException | ProviderCouldNotAddShareException $e) {
 			return new JSONResponse(
@@ -360,23 +359,6 @@ class RequestHandlerController extends Controller
 	}
 
 	/**
-	 * Normalize protocol to the new format
-	 * this way we can speak OCM 1.1.0 even with
-	 * older implementations
-	 *
-	 * @param array $protocol
-	 * @return array
-	 */
-	private function normalizeProtocol($protocol): array
-	{
-		if (array_key_exists('name', $protocol)) {
-			return ['singleProtocolLegacy' => $protocol];
-		}
-
-		return $protocol;
-	}
-
-	/**
 	 * Validate the protocol
 	 *  For 1.0.0 this was:
 	 *  !is_array($protocol) ||
@@ -392,31 +374,31 @@ class RequestHandlerController extends Controller
 	 */
 	private function validateProtocol($protocol): bool
 	{
+
 		if (!is_array($protocol)) {
 			return false;
 		}
+		$name = $protocol['name'];
+		if (!isset($name))  {
+			return false;
+		}
 
-		if (array_key_exists('singleProtocolLegacy', $protocol)) {
-			$name = $protocol['singleProtocolLegacy']['name'];
-			if (!isset($name) || $name !== 'webdav') {
-				return false;
-			}
-			$options = $protocol['singleProtocolLegacy']['options'];
+	    // singleProtocolLegacy
+		if ($name === 'webdav') {
+			$options = $protocol['options'];
 			if (!isset($options) || !is_array($options) || !isset($options['sharedSecret'])) {
 				return false;
 			}
 			return true;
 		}
-		if (array_key_exists('singleProtocolNew', $protocol)) {
-			$name = $protocol['singleProtocolNew']['name'];
-			if (!isset($name) || $name !== 'webdav') {
-				return false;
-			}
-			$options = $protocol['singleProtocolNew']['options'];
+
+		// singleProtocolNew
+		if ($name === 'webdav' && isset($protocol['webdav'])) {
+			$options = $protocol['options'];
 			if (!isset($options) || !is_array($options) || !isset($options['sharedSecret'])) {
 				return false;
 			}
-			$webdav = $protocol['singleProtocolNew']['webdav'];
+			$webdav = $protocol['webdav'];
 			if (
 				!isset($webdav) ||
 				!is_array($webdav) ||
@@ -428,14 +410,11 @@ class RequestHandlerController extends Controller
 			}
 			return true;
 		}
-		if (array_key_exists('multipleProtocols', $protocol)) {
-			$name = $protocol['multipleProtocols']['name'];
-			if (!isset($name) || $name !== 'multi') {
-				return false;
-			}
-			$webdav = $protocol['multipleProtocols']['webdav'];
-			$webapp = $protocol['multipleProtocols']['webapp'];
-			$datatx = $protocol['multipleProtocols']['datatx'];
+        // multipleProtocols
+		if ($name === 'multi') {
+			$webdav = $protocol['webdav'];
+			$webapp = $protocol['webapp'];
+			$datatx = $protocol['datatx'];
 			if (
 				!isset($webdav) ||
 				!isset($webapp) ||
@@ -471,15 +450,8 @@ class RequestHandlerController extends Controller
 	private function extractSharedSecret(array $protocol): string
 	{
 		$sharedSecret = '';
-		if (array_key_exists('singleProtocolLegacy', $protocol)) {
-			$sharedSecret = $protocol['singleProtocolLegacy']['options']['sharedSecret'];
-		} elseif (array_key_exists('singleProtocolNew', $protocol)) {
-			$sharedSecret = $protocol['singleProtocolNew']['options']['sharedSecret'];
-		} elseif (array_key_exists('multipleProtocols', $protocol)) {
-			$options = $protocol['multipleProtocols']['options'];
-			if (isset($options)) {
-				$sharedSecret = $options['sharedSecret'];
-			}
+		if (array_key_exists('options', $protocol) && array_key_exists('sharedSecret', $protocol['options'])) {
+			$sharedSecret = $protocol['options']['sharedSecret'];
 		}
 		return $sharedSecret;
 	}

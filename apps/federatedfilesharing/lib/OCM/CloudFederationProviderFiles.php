@@ -89,28 +89,19 @@ class CloudFederationProviderFiles implements ICloudFederationProvider {
 
 		$protocol = $share->getProtocol();
 		$name = '';
+		// OCM 1.1.0 https://cs3org.github.io/OCM-API/docs.html?branch=v1.1.0&repo=OCM-API&user=cs3org#/paths/~1shares/post
 		if (array_key_exists('name', $protocol)) {
-			// OCM 1.0.0 https://cs3org.github.io/OCM-API/docs.html?branch=v1.0.0&repo=OCM-API&user=cs3org#/paths/~1shares/post
 			$name = $protocol['name'];
-		} else {
-			// OCM 1.1.0 https://cs3org.github.io/OCM-API/docs.html?branch=v1.1.0&repo=OCM-API&user=cs3org#/paths/~1shares/post
-			if (array_key_exists('singleProtocolLegacy', $protocol)) {
-				$name = $protocol['singleProtocolLegacy']['name'];
-			}
-			elseif (array_key_exists('singleProtocolLegacy', $protocol)) {
-				$name = $protocol['singleProtocolNew']['name'];
-			}
-			elseif (array_key_exists('multipleProtocols', $protocol)) {
-				if(array_key_exists('webdav', $protocol['multipleProtocols'])) {
-					$name = 'webdav';
-				}
-			}
 		}
 
 
-		if ($name !== 'webdav') {
+		if (!in_array($name, ['webdav', 'multi'])) {
 			throw new ProviderCouldNotAddShareException('Unsupported protocol for data exchange.', '', Http::STATUS_NOT_IMPLEMENTED);
 		}
+		if ($name === 'multi' && !array_key_exists('webdav', $protocol) ) {
+			throw new ProviderCouldNotAddShareException('Unsupported protocol for data exchange.', '', Http::STATUS_NOT_IMPLEMENTED);
+		}
+
 
 		[$ownerUid, $remote] = $this->addressHandler->splitUserRemote($share->getOwner());
 		// for backward compatibility make sure that the remote url stored in the
