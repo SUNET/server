@@ -141,7 +141,7 @@ class Manager implements IManager {
 			if ($share->getSharedWith() !== null) {
 				throw new \InvalidArgumentException('SharedWith should be empty');
 			}
-		} elseif ($share->getShareType() === IShare::TYPE_EMAIL) {
+		} elseif ($share->getShareType() === IShare::TYPE_EMAIL || $share->getShareType() === IShare::TYPE_INVITATION_LINK ) {
 			if ($share->getSharedWith() === null) {
 				throw new \InvalidArgumentException('SharedWith should not be empty');
 			}
@@ -619,7 +619,6 @@ class Manager implements IManager {
 	 */
 	public function createShare(IShare $share) {
 		$this->canShare($share);
-
 		$this->generalCreateChecks($share);
 
 		// Verify if there are any issues with the path
@@ -660,7 +659,8 @@ class Manager implements IManager {
 				// Verify the expiration date
 				$share = $this->validateExpirationDateInternal($share);
 			} elseif ($share->getShareType() === IShare::TYPE_LINK
-				|| $share->getShareType() === IShare::TYPE_EMAIL) {
+				|| $share->getShareType() === IShare::TYPE_EMAIL
+				|| $share->getShareType() === IShare::TYPE_INVITATION_LINK) {
 				$this->linkCreateChecks($share);
 				$this->setLinkParent($share);
 

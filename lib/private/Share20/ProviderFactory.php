@@ -316,7 +316,7 @@ class ProviderFactory implements IProviderFactory {
 			$provider = $this->defaultShareProvider();
 		} elseif ($shareType === IShare::TYPE_REMOTE || $shareType === IShare::TYPE_REMOTE_GROUP) {
 			$provider = $this->federatedShareProvider();
-		} elseif ($shareType === IShare::TYPE_EMAIL) {
+		} elseif ($shareType === IShare::TYPE_EMAIL || $shareType === IShare::TYPE_INVITATION_LINK) {
 			$provider = $this->getShareByMailProvider();
 		} elseif ($shareType === IShare::TYPE_CIRCLE) {
 			$provider = $this->getShareByCircleProvider();
