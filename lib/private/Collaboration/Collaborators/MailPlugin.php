@@ -213,7 +213,7 @@ class MailPlugin implements ISearchPlugin {
 							'type' => $emailAddressType ?? '',
 							'value' => [
 								'shareType' => IShare::TYPE_INVITATION_LINK,
-								'shareWith' => $emailAddress,
+								'shareWith' => $search,
 							],
 						];
 					} else {
@@ -235,7 +235,7 @@ class MailPlugin implements ISearchPlugin {
 							'type' => $emailAddressType ?? '',
 							'value' => [
 								'shareType' => IShare::TYPE_INVITATION_LINK,
-								'shareWith' => $emailAddress,
+								'shareWith' => $search,
 							],
 						];
 					}
@@ -268,7 +268,7 @@ class MailPlugin implements ISearchPlugin {
 				'type' => $emailAddressType ?? '',
 				'value' => [
 					'shareType' => IShare::TYPE_INVITATION_LINK,
-					'shareWith' => $emailAddress,
+					'shareWith' => $search,
 				],
 			];
 		}

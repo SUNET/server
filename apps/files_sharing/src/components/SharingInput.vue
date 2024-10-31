@@ -177,12 +177,14 @@ export default {
 				this.SHARE_TYPES.SHARE_TYPE_GUEST,
 				this.SHARE_TYPES.SHARE_TYPE_DECK,
 				this.SHARE_TYPES.SHARE_TYPE_SCIENCEMESH,
+				
 			]
 
 			if (getCapabilities().files_sharing.public.enabled === true) {
 				shareType.push(this.SHARE_TYPES.SHARE_TYPE_EMAIL)
+				shareType.push(this.SHARE_TYPES.SHARE_TYPE_INVITATION_LINK)
 			}
-
+			console.error("types", shareType)
 			let request = null
 			try {
 				request = await axios.get(generateOcsUrl('apps/files_sharing/api/v1/sharees'), {
