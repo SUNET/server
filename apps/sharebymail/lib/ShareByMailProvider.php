@@ -232,6 +232,33 @@ class ShareByMailProvider extends DefaultShareProvider implements IShareProvider
 			$share->getNote(),
 			$share->getAttributes(),
 			$share->getMailSend(),
+			$share->getShareType(),
+		);
+	}
+
+	/**
+	 * @throws \Exception
+	 */
+	protected function createInvitationShare(IShare $share): int {
+		$share->setToken($this->generateToken());
+		return $this->addShareToDB(
+			$share->getNodeId(),
+			$share->getNodeType(),
+			$share->getSharedWith(),
+			$share->getSharedBy(),
+			$share->getShareOwner(),
+			$share->getPermissions(),
+			$share->getToken(),
+			$share->getPassword(),
+			$share->getPasswordExpirationTime(),
+			$share->getSendPasswordByTalk(),
+			$share->getHideDownload(),
+			$share->getLabel(),
+			$share->getExpirationDate(),
+			$share->getNote(),
+			$share->getAttributes(),
+			$share->getMailSend(),
+			$share->getShareType()
 		);
 	}
 
@@ -683,11 +710,13 @@ class ShareByMailProvider extends DefaultShareProvider implements IShareProvider
 		?\DateTimeInterface $expirationTime,
 		?string $note = '',
 		?IAttributes $attributes = null,
-		?bool $mailSend = true
+		?bool $mailSend = true,
+		int $shareType = 4
 	): int {
+		echo "kir toosh:". $shareType;
 		$qb = $this->dbConnection->getQueryBuilder();
 		$qb->insert('share')
-			->setValue('share_type', $qb->createNamedParameter(IShare::TYPE_EMAIL))
+			->setValue('share_type', $qb->createNamedParameter($shareType))
 			->setValue('item_type', $qb->createNamedParameter($itemType))
 			->setValue('item_source', $qb->createNamedParameter($itemSource))
 			->setValue('file_source', $qb->createNamedParameter($itemSource))

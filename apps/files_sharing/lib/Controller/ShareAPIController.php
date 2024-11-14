@@ -2082,7 +2082,8 @@ class ShareAPIController extends OCSController {
 			// For mail and link shares, the user must be
 			// the owner of the share, not only the file owner.
 			if ($share->getShareType() === IShare::TYPE_EMAIL
-				|| $share->getShareType() === IShare::TYPE_LINK) {
+				|| $share->getShareType() === IShare::TYPE_LINK
+				|| $share->getShareType() === IShare::TYPE_INVITATION_LINK) {
 				if ($share->getSharedBy() !== $this->currentUser) {
 					throw new OCSForbiddenException($this->l->t('You are not allowed to send mail notifications'));
 				}
