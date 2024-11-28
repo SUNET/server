@@ -637,6 +637,9 @@ class ShareAPIController extends OCSController {
 		$this->checkInheritedAttributes($share);
 
 		// Handle mail send
+		if($shareType === IShare::TYPE_INVITATION_LINK){
+			$sendMail = 'true';
+		}
 		if ($sendMail === 'true' || $sendMail === 'false') {
 			$share->setMailSend($sendMail === 'true');
 		}

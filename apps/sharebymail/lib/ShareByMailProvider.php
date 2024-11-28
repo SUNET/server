@@ -332,9 +332,17 @@ class ShareByMailProvider extends DefaultShareProvider implements IShareProvider
 	 * @param array $emails The email addresses to send the email to
 	 */
 	protected function sendEmail(IShare $share, array $emails): void {
-		$link = $this->urlGenerator->linkToRouteAbsolute('files_sharing.sharecontroller.showShare', [
+		$action = 'files_sharing.sharecontroller.showShare';
+		$emailId = 'sharebymail.RecipientNotification';
+		if ($share->getShareType() === IShare::TYPE_INVITATION_LINK){
+			$emailId = 'sharebyInvitation.RecipientNotification';
+			$action = 'files_sharing.sharecontroller.acceptInvitation';
+		}
+
+		$link = $this->urlGenerator->linkToRouteAbsolute($action, [
 			'token' => $share->getToken()
 		]);
+
 
 		$expiration = $share->getExpirationDate();
 		$filename = $share->getNode()->getName();
@@ -346,7 +354,7 @@ class ShareByMailProvider extends DefaultShareProvider implements IShareProvider
 		$initiatorDisplayName = ($initiatorUser instanceof IUser) ? $initiatorUser->getDisplayName() : $initiator;
 		$message = $this->mailer->createMessage();
 
-		$emailTemplate = $this->mailer->createEMailTemplate('sharebymail.RecipientNotification', [
+		$emailTemplate = $this->mailer->createEMailTemplate($emailId, [
 			'filename' => $filename,
 			'link' => $link,
 			'initiator' => $initiatorDisplayName,
@@ -378,11 +386,17 @@ class ShareByMailProvider extends DefaultShareProvider implements IShareProvider
 			);
 		}
 
-		$emailTemplate->addBodyText(
-			htmlspecialchars($text . ' ' . $this->l->t('Click the button below to open it.')),
-			$text
-		);
-
+		if ($share->getShareType() === IShare::TYPE_INVITATION_LINK){
+			$emailTemplate->addBodyText(
+				htmlspecialchars($text . ' ' . $this->l->t('Copy the below link and put in invited share page to accept invitation.')),
+				$text
+			);
+		}else{
+			$emailTemplate->addBodyText(
+				htmlspecialchars($text . ' ' . $this->l->t('Click the button below to open it.')),
+				$text
+			);
+		}
 		$emailTemplate->addBodyButton(
 			$this->l->t('Open %s', [$filename]),
 			$link
@@ -425,6 +439,7 @@ class ShareByMailProvider extends DefaultShareProvider implements IShareProvider
 		}
 
 		$message->useTemplate($emailTemplate);
+
 		$failedRecipients = $this->mailer->send($message);
 		if (!empty($failedRecipients)) {
 			$this->logger->error('Share notification mail could not be sent to: ' . implode(', ', $failedRecipients));
@@ -713,7 +728,6 @@ class ShareByMailProvider extends DefaultShareProvider implements IShareProvider
 		?bool $mailSend = true,
 		int $shareType = 4
 	): int {
-		echo "kir toosh:". $shareType;
 		$qb = $this->dbConnection->getQueryBuilder();
 		$qb->insert('share')
 			->setValue('share_type', $qb->createNamedParameter($shareType))
