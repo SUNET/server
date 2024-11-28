@@ -801,6 +801,18 @@ class ShareAPIController extends OCSController {
 		return new DataResponse($output);
 	}
 
+
+	/**
+	 * accept invitation share
+	 *
+	 * @param string|null $shareToken Path of the share
+	 *
+	 * 200: accept share Invitation
+	 */
+	#[NoAdminRequired]
+	public function acceptInvitation($shareToken){
+
+	}
 	/**
 	 * @param null|Node $node
 	 * @param boolean $includeTags
