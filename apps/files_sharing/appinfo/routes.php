@@ -97,6 +97,11 @@ return [
 			'verb' => 'POST',
 		],
 		[
+			'name' => 'ShareAPI#acceptInvitation',
+			'url' => '/api/v1/invitation/accept',
+			'verb' => 'POST',
+		],
+		[
 			'name' => 'ShareAPI#pendingShares',
 			'url' => '/api/v1/shares/pending',
 			'verb' => 'GET',
