@@ -102,6 +102,11 @@ interface IShare {
 	public const TYPE_SCIENCEMESH = 15;
 
 	/**
+	 * @since //todo: set version
+	 */
+	public const TYPE_INVITATION_LINK = 16;
+	
+	/**
 	 * @since 18.0.0
 	 */
 	public const STATUS_PENDING = 0;

@@ -35,7 +35,7 @@ class Search implements ISearch {
 
 		/** @var ISearchResult $searchResult */
 		$searchResult = $this->container->resolve(SearchResult::class);
-
+		//die(var_export($this->pluginList, true));
 		foreach ($shareTypes as $type) {
 			if (!isset($this->pluginList[$type])) {
 				continue;

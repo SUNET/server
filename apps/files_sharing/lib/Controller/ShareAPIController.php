@@ -637,6 +637,9 @@ class ShareAPIController extends OCSController {
 		$this->checkInheritedAttributes($share);
 
 		// Handle mail send
+		if($shareType === IShare::TYPE_INVITATION_LINK){
+			$sendMail = 'true';
+		}
 		if ($sendMail === 'true' || $sendMail === 'false') {
 			$share->setMailSend($sendMail === 'true');
 		}
@@ -660,14 +663,15 @@ class ShareAPIController extends OCSController {
 			$share->setSharedWith($shareWith);
 			$share->setPermissions($permissions);
 		} elseif ($shareType === IShare::TYPE_LINK
-			|| $shareType === IShare::TYPE_EMAIL) {
+			|| $shareType === IShare::TYPE_EMAIL
+			|| $shareType === IShare::TYPE_INVITATION_LINK) {
 
 			// Can we even share links?
 			if (!$this->shareManager->shareApiAllowLinks()) {
 				throw new OCSNotFoundException($this->l->t('Public link sharing is disabled by the administrator'));
 			}
 
-			if ($publicUpload === 'true') {
+			if ($publicUpload === 'true' && $shareType !== IShare::TYPE_INVITATION_LINK) {
 				// Check if public upload is allowed
 				if (!$this->shareManager->shareApiLinkAllowPublicUpload()) {
 					throw new OCSForbiddenException($this->l->t('Public upload disabled by the administrator'));
@@ -685,7 +689,7 @@ class ShareAPIController extends OCSController {
 			}
 
 			// TODO: It might make sense to have a dedicated setting to allow/deny converting link shares into federated ones
-			if ($this->shareManager->outgoingServer2ServerSharesAllowed()) {
+			if ($this->shareManager->outgoingServer2ServerSharesAllowed() && $shareType !== IShare::TYPE_INVITATION_LINK) {
 				$permissions |= Constants::PERMISSION_SHARE;
 			}
 
@@ -697,7 +701,7 @@ class ShareAPIController extends OCSController {
 			}
 
 			// Only share by mail have a recipient
-			if (is_string($shareWith) && $shareType === IShare::TYPE_EMAIL) {
+			if (is_string($shareWith) && ($shareType === IShare::TYPE_EMAIL || $shareType === IShare::TYPE_INVITATION_LINK)) {
 				// If sending a mail have been requested, validate the mail address
 				if ($share->getMailSend() && !$this->mailer->validateMailAddress($shareWith)) {
 					throw new OCSNotFoundException($this->l->t('Please specify a valid email address'));
@@ -797,6 +801,18 @@ class ShareAPIController extends OCSController {
 		return new DataResponse($output);
 	}
 
+
+	/**
+	 * accept invitation share
+	 *
+	 * @param string|null $shareToken Path of the share
+	 *
+	 * 200: accept share Invitation
+	 */
+	#[NoAdminRequired]
+	public function acceptInvitation($shareToken){
+
+	}
 	/**
 	 * @param null|Node $node
 	 * @param boolean $includeTags
@@ -2081,7 +2097,8 @@ class ShareAPIController extends OCSController {
 			// For mail and link shares, the user must be
 			// the owner of the share, not only the file owner.
 			if ($share->getShareType() === IShare::TYPE_EMAIL
-				|| $share->getShareType() === IShare::TYPE_LINK) {
+				|| $share->getShareType() === IShare::TYPE_LINK
+				|| $share->getShareType() === IShare::TYPE_INVITATION_LINK) {
 				if ($share->getSharedBy() !== $this->currentUser) {
 					throw new OCSForbiddenException($this->l->t('You are not allowed to send mail notifications'));
 				}

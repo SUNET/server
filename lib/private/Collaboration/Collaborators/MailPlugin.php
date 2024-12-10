@@ -205,6 +205,17 @@ class MailPlugin implements ISearchPlugin {
 								'shareWith' => $emailAddress,
 							],
 						];
+
+						$result['exact'][] = [
+							'label' => $search,
+							'uuid' => $search,
+							'name' => $search,
+							'type' => $emailAddressType ?? '',
+							'value' => [
+								'shareType' => IShare::TYPE_INVITATION_LINK,
+								'shareWith' => $search,
+							],
+						];
 					} else {
 						$result['wide'][] = [
 							'label' => $displayName,
@@ -214,6 +225,17 @@ class MailPlugin implements ISearchPlugin {
 							'value' => [
 								'shareType' => IShare::TYPE_EMAIL,
 								'shareWith' => $emailAddress,
+							],
+						];
+
+						$result['exact'][] = [
+							'label' => $search,
+							'uuid' => $search,
+							'name' => $search,
+							'type' => $emailAddressType ?? '',
+							'value' => [
+								'shareType' => IShare::TYPE_INVITATION_LINK,
+								'shareWith' => $search,
 							],
 						];
 					}
@@ -239,13 +261,22 @@ class MailPlugin implements ISearchPlugin {
 					'shareWith' => $search,
 				],
 			];
+			$result['exact'][] = [
+				'label' => $search,
+				'uuid' => $search,
+				'name' => $search,
+				'type' => $emailAddressType ?? '',
+				'value' => [
+					'shareType' => IShare::TYPE_INVITATION_LINK,
+					'shareWith' => $search,
+				],
+			];
 		}
 
 		if (!empty($userResults['wide'])) {
 			$searchResult->addResultSet($userType, $userResults['wide'], []);
 		}
 		$searchResult->addResultSet($emailType, $result['wide'], $result['exact']);
-
 		return !$reachedEnd;
 	}
 
